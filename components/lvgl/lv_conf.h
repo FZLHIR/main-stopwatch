@@ -9,6 +9,7 @@
 #define LV_CONF_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 /*====================
    颜色设置
@@ -18,12 +19,12 @@
 #define LV_COLOR_DEPTH 16
 
 /*交换 2 字节的 RGB565 颜色。如果显示器具有 8 位接口（例如 SPI），则很有用*/
-#define LV_COLOR_16_SWAP 0
+#define LV_COLOR_16_SWAP 1
 
 /*启用此功能以在透明背景上绘制。
  *如果要使用 opa 和 transform_* 样式属性，则它是必需的。（透明度与图像变换）
  *如果 UI 位于另一层（例如 OSD 菜单或视频播放器）上方，也可以使用。*/
-#define LV_COLOR_SCREEN_TRANSP 0
+#define LV_COLOR_SCREEN_TRANSP 1
 
 /* 调整颜色混合功能。GPU 可能会以不同的方式计算颜色（混合）。
  * 0：向下舍入，64：从 x.75 向上舍入，128：从一半向上舍入，192：从 x.25 向上舍入，254：向上舍入*/
@@ -72,7 +73,7 @@
 #define LV_DISP_DEF_REFR_PERIOD 20 /*[ms]*/
 
 /*输入设备读取周期（以毫秒为单位）*/
-#define LV_INDEV_DEF_READ_PERIOD 30 /*[ms]*/
+#define LV_INDEV_DEF_READ_PERIOD 20 /*[ms]*/
 
 /*使用自定义时钟周期源，以毫秒为单位告知经过的时间。
  *这样就无需使用 `lv_tick_inc()` 手动更新tick了。）*/
@@ -105,7 +106,7 @@
 /*允许缓冲一些阴影计算。
  *LV_SHADOW_CACHE_SIZE 是要缓冲的最大阴影大小，其中阴影大小为 'shadow_width + 半径'
  *缓存具有 LV_SHADOW_CACHE_SIZE^2 RAM 成本*/
-#define LV_SHADOW_CACHE_SIZE 0
+#define LV_SHADOW_CACHE_SIZE 1
 
 /*设置最大缓存的圆数据的数量。
  * 保存 1/4 圆的周长用于抗锯齿
@@ -135,18 +136,18 @@
  *使用复杂的图像解码器（e.g. PNG 或 JPG）缓存可以保存图像的连续打开/解码。
  *但是，打开的映像可能会消耗额外的 RAM。
  *0：禁用缓存*/
-#define LV_IMG_CACHE_DEF_SIZE 0
+#define LV_IMG_CACHE_DEF_SIZE 6
 
 /*每个颜色梯度允许的停止数。增加此项以允许更多停止。
  *每个额外的停止点将增加 （sizeof（lv_color_t） + 1） 字节*/
-#define LV_GRADIENT_MAX_STOPS 2 // 渐变将包含最多两种颜色（例如，从红色渐变到蓝色）
+#define LV_GRADIENT_MAX_STOPS 4 // 渐变将包含最多两种颜色（例如，从红色渐变到蓝色）
 
 /*默认渐变缓冲区大小。
  *当 LVGL 计算梯度 “映射” 时，它可以将它们保存到缓存中，以避免再次计算它们。
  *LV_GRAD_CACHE_DEF_SIZE 设置此缓存的大小（以字节为单位）。
  *如果缓存太小，则仅在绘制需要时分配地图。
  *0 表示无缓存*/
-#define LV_GRAD_CACHE_DEF_SIZE 0
+#define LV_GRAD_CACHE_DEF_SIZE 1024
 
 /*允许对渐变进行抖动（以在有限的颜色深度显示上实现视觉平滑的颜色渐变）
  *LV_DITHER_GRADIENT意味着再分配一行或两行对象的渲染表面
@@ -224,7 +225,7 @@
  *-----------*/
 
 /*启用 log 模块*/
-#define LV_USE_LOG 0
+#define LV_USE_LOG 1
 #if LV_USE_LOG
 
 /*应添加多重要的日志：
@@ -260,29 +261,29 @@
  *如果启用了 LV_USE_LOG ，则失败时将打印错误消息*/
 #define LV_USE_ASSERT_NULL 1          /*检查参数是否为 NULL。（非常快，推荐）*/
 #define LV_USE_ASSERT_MALLOC 1        /*检查内存是否分配成功。（非常快，推荐）*/
-#define LV_USE_ASSERT_STYLE 0         /*检查样式是否已正确初始化。（非常快，推荐）*/
+#define LV_USE_ASSERT_STYLE 1         /*检查样式是否已正确初始化。（非常快，推荐）*/
 #define LV_USE_ASSERT_MEM_INTEGRITY 0 /*在关键作后检查“lv_mem”的完整性。（慢速）*/
-#define LV_USE_ASSERT_OBJ 0           /*检查对象的类型和存在性（例如，未删除）。（慢速）*/
+#define LV_USE_ASSERT_OBJ 1           /*检查对象的类型和存在性（例如，未删除）。（慢速）*/
 
 /*在发生 assert 时添加自定义处理程序，例如重新启动 MCU*/
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
 #define LV_ASSERT_HANDLER \
   while (1)               \
-    ; /*默认暂停*/
+    printf("LVGL ASSERTION FAILED"); /*默认暂停*/
 
 /*-------------
  * 其他
  *-----------*/
 
 /*1: 显示 CPU 使用率和 FPS 计数*/
-#define LV_USE_PERF_MONITOR 0
+#define LV_USE_PERF_MONITOR 1
 #if LV_USE_PERF_MONITOR
 #define LV_USE_PERF_MONITOR_POS LV_ALIGN_BOTTOM_RIGHT
 #endif
 
 /*1: 显示已使用的内存和内存碎片
  * 需求 LV_MEM_CUSTOM = 0*/
-#define LV_USE_MEM_MONITOR 0
+#define LV_USE_MEM_MONITOR 1
 #if LV_USE_MEM_MONITOR
 #define LV_USE_MEM_MONITOR_POS LV_ALIGN_BOTTOM_LEFT
 #endif
@@ -326,7 +327,7 @@
 #define LV_ATTRIBUTE_FLUSH_READY
 
 /*缓冲区所需的对齐大小*/
-#define LV_ATTRIBUTE_MEM_ALIGN_SIZE 1
+#define LV_ATTRIBUTE_MEM_ALIGN_SIZE 16
 
 /*将添加到需要对齐内存的位置（默认情况下，-Os 数据可能不与 boundary 对齐）。
  * E.g. __attribute__((aligned(4)))*/
@@ -359,9 +360,9 @@
  *https://fonts.google.com/specimen/Montserrat*/
 #define LV_FONT_MONTSERRAT_8 0
 #define LV_FONT_MONTSERRAT_10 0
-#define LV_FONT_MONTSERRAT_12 0
+#define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
-#define LV_FONT_MONTSERRAT_16 0
+#define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_18 0
 #define LV_FONT_MONTSERRAT_20 0
 #define LV_FONT_MONTSERRAT_22 0
@@ -369,7 +370,7 @@
 #define LV_FONT_MONTSERRAT_26 0
 #define LV_FONT_MONTSERRAT_28 0
 #define LV_FONT_MONTSERRAT_30 0
-#define LV_FONT_MONTSERRAT_32 0
+#define LV_FONT_MONTSERRAT_32 1
 #define LV_FONT_MONTSERRAT_34 0
 #define LV_FONT_MONTSERRAT_36 0
 #define LV_FONT_MONTSERRAT_38 0
@@ -406,7 +407,7 @@
 #define LV_USE_FONT_COMPRESSED 0
 
 /*启用子像素渲染*/
-#define LV_USE_FONT_SUBPX 0
+#define LV_USE_FONT_SUBPX 1
 #if LV_USE_FONT_SUBPX
 /*设置显示器的像素顺序。RGB 通道的物理顺序。与 “normal” 字体无关紧要.*/
 #define LV_FONT_SUBPX_BGR 0 /*0: RGB; 1:BGR order*/
@@ -428,11 +429,11 @@
 #define LV_TXT_ENC LV_TXT_ENC_UTF8
 
 /*可以在这些字符上断开（换行）文本*/
-#define LV_TXT_BREAK_CHARS " ,.;:-_"
+#define LV_TXT_BREAK_CHARS " ,.;:-_?!，。；：—？！"
 
 /*如果一个单词至少有这么长，就会在“最漂亮”的地方换行
  *要禁用，请设置为值 <= 0*/
-#define LV_TXT_LINE_BREAK_LONG_LEN 0
+#define LV_TXT_LINE_BREAK_LONG_LEN 12
 
 /*在换行之前放在一行中的长单词的最小字符数。
  *取决于 LV_TXT_LINE_BREAK_LONG_LEN.*/
@@ -713,11 +714,11 @@
 #define LV_USE_IMGFONT 0
 
 /*1：启用基于已发布订阅者的消息传送系统 */
-#define LV_USE_MSG 0
+#define LV_USE_MSG 1
 
 /*1：启用拼音输入法*/
 /*要求： lv_keyboard*/
-#define LV_USE_IME_PINYIN 0
+#define LV_USE_IME_PINYIN 1
 #if LV_USE_IME_PINYIN
 /*1: 使用默认同音词库*/
 /*如果您不使用默认同音词库，请务必在设置同音词库后使用 'lv_ime_pinyin'*/
@@ -754,23 +755,23 @@
 #define LV_USE_DEMO_KEYPAD_AND_ENCODER 0
 
 /*对您的系统进行基准测试*/
-#define LV_USE_DEMO_BENCHMARK 0
+#define LV_USE_DEMO_BENCHMARK 1
 #if LV_USE_DEMO_BENCHMARK
 /*使用具有 16 位颜色深度的 RGB565A8 图像，而不是 ARGB8565*/
-#define LV_DEMO_BENCHMARK_RGB565A8 1
+#define LV_DEMO_BENCHMARK_RGB565A8 0
 #endif
 
 /*LVGL 的压力测试*/
 #define LV_USE_DEMO_STRESS 0
 
 /*音乐播放器演示*/
-#define LV_USE_DEMO_MUSIC 0
+#define LV_USE_DEMO_MUSIC 1
 #if LV_USE_DEMO_MUSIC
 #define LV_DEMO_MUSIC_SQUARE 0
 #define LV_DEMO_MUSIC_LANDSCAPE 0
 #define LV_DEMO_MUSIC_ROUND 0
 #define LV_DEMO_MUSIC_LARGE 0
-#define LV_DEMO_MUSIC_AUTO_PLAY 0
+#define LV_DEMO_MUSIC_AUTO_PLAY 1
 #endif
 
 /*--END OF LV_CONF_H--*/
