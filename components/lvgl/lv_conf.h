@@ -3,14 +3,12 @@
  * Configuration file for v8.4.0
  * 此处定义比配置中优先级更高，定义后将覆盖配置中的值
  */
-#if 1 // 将其设置为“1”以启用内容
-
 #ifndef LV_CONF_H
 #define LV_CONF_H
 
 #include <stdint.h>
 #include <stdio.h>
-
+#include "esp_heap_caps.h"
 /*====================
    颜色设置
  *====================*/
@@ -38,10 +36,10 @@
  *=========================*/
 
 /*1: 使用自定义的 malloc/free，0：使用内置的 `lv_mem_alloc()` 和 `lv_mem_free()`*/
-#define LV_MEM_CUSTOM 0
+#define LV_MEM_CUSTOM 1
 #if LV_MEM_CUSTOM == 0
 /*可用于 'lv_mem_alloc（）' 的内存大小，以字节为单位 （>= 2kB）*/
-#define LV_MEM_SIZE (48U * 1024U) /*[bytes]*/
+#define LV_MEM_SIZE (480U * 1024U) /*[bytes]*/
 
 /*为内存池设置一个地址，而不是将其分配为普通数组。也可以在外部 SRAM 中。*/
 #define LV_MEM_ADR 0 /*0: 闲置*/
@@ -51,11 +49,12 @@
 #undef LV_MEM_POOL_ALLOC
 #endif
 
-#else                                    /*LV_MEM_CUSTOM*/
-#define LV_MEM_CUSTOM_INCLUDE <stdlib.h> /*动态内存函数的头文件*/
-#define LV_MEM_CUSTOM_ALLOC malloc
-#define LV_MEM_CUSTOM_FREE free
-#define LV_MEM_CUSTOM_REALLOC realloc
+#else /*LV_MEM_CUSTOM*/
+#define LV_MEM_CUSTOM_INCLUDE <stdlib.h>
+#define LV_MEM_CUSTOM_ALLOC(size) heap_caps_malloc(size, MALLOC_CAP_SPIRAM)
+#define LV_MEM_CUSTOM_FREE(p) free(p)
+#define LV_MEM_CUSTOM_REALLOC(p, size) heap_caps_realloc(p, size, MALLOC_CAP_SPIRAM)
+
 #endif /*LV_MEM_CUSTOM*/
 
 /*渲染和其他内部处理机制期间使用的中间内存缓冲区的编号。
@@ -73,7 +72,7 @@
 #define LV_DISP_DEF_REFR_PERIOD 20 /*[ms]*/
 
 /*输入设备读取周期（以毫秒为单位）*/
-#define LV_INDEV_DEF_READ_PERIOD 20 /*[ms]*/
+#define LV_INDEV_DEF_READ_PERIOD 60 /*[ms]*/
 
 /*使用自定义时钟周期源，以毫秒为单位告知经过的时间。
  *这样就无需使用 `lv_tick_inc()` 手动更新tick了。）*/
@@ -128,8 +127,8 @@
  * “变换的图层”（使用变换角度/缩放属性）使用更大的缓冲区
  * 并且不能分块绘制。因此，这些设置仅影响具有不透明度的 widget。
  */
-#define LV_LAYER_SIMPLE_BUF_SIZE (24 * 1024)
-#define LV_LAYER_SIMPLE_FALLBACK_BUF_SIZE (3 * 1024)
+#define LV_LAYER_SIMPLE_BUF_SIZE (64 * 1024)
+#define LV_LAYER_SIMPLE_FALLBACK_BUF_SIZE (4 * 1024)
 
 /*默认图像缓存大小。图像缓存使图像保持打开状态。
  *如果只使用内置的图像格式，则缓存没有真正的优势。（即，如果未添加新的图像解码器）
@@ -242,7 +241,7 @@
 #define LV_LOG_PRINTF 0
 
 /*在产生大量日志的模块中启用/禁用 LV_LOG_TRACE*/
-#define LV_LOG_TRACE_MEM 1
+#define LV_LOG_TRACE_MEM 0
 #define LV_LOG_TRACE_TIMER 1
 #define LV_LOG_TRACE_INDEV 1
 #define LV_LOG_TRACE_DISP_REFR 1
@@ -263,13 +262,14 @@
 #define LV_USE_ASSERT_MALLOC 1        /*检查内存是否分配成功。（非常快，推荐）*/
 #define LV_USE_ASSERT_STYLE 1         /*检查样式是否已正确初始化。（非常快，推荐）*/
 #define LV_USE_ASSERT_MEM_INTEGRITY 0 /*在关键作后检查“lv_mem”的完整性。（慢速）*/
-#define LV_USE_ASSERT_OBJ 1           /*检查对象的类型和存在性（例如，未删除）。（慢速）*/
+#define LV_USE_ASSERT_OBJ 0           /*检查对象的类型和存在性（例如，未删除）。（慢速）*/
 
 /*在发生 assert 时添加自定义处理程序，例如重新启动 MCU*/
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
-#define LV_ASSERT_HANDLER \
-  while (1)               \
-    printf("LVGL ASSERTION FAILED"); /*默认暂停*/
+#define LV_ASSERT_HANDLER              \
+  while (1)                            \
+    printf("LVGL ASSERTION FAILED! "); \
+  /*默认暂停*/
 
 /*-------------
  * 其他
@@ -775,7 +775,8 @@
 #endif
 
 /*--END OF LV_CONF_H--*/
+/// 用户自定义配置
+#define LV_USE_FS_VFS 1
+#define LV_FS_VFS_LETTER 'V'
 
 #endif /*LV_CONF_H*/
-
-#endif /*“内容启用”结束*/

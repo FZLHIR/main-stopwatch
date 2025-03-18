@@ -6,7 +6,8 @@ menu "Hard_Start"
         bool "Enable Hard_Start"
         default y
 
-    menu  "i80_PIN"
+    if HARDS_START_ENABLE
+        menu  "i80_PIN"
         config lcd_cs
             int "LCD CS"
             default 46
@@ -51,11 +52,11 @@ menu "Hard_Start"
             default 2
             help
                 时钟速度，单位MHz，默认2MHz
-    help
-        T6K71屏幕的硬件引脚配置
-    endmenu
-
-    menu "GPS_PIN"
+        help
+            T6K71屏幕的硬件引脚配置
+        endmenu
+    
+        menu "GPS_PIN"
         config GPS_PPS
             int "GPS PPS"
             default 2
@@ -73,11 +74,11 @@ menu "Hard_Start"
             default 9600
             help
                 GPS模块波特率，默认9600
-    help
-        GPS模块的硬件引脚配置    
-    endmenu
-            
-    menu "MPU6050_PIN"
+        help
+            GPS模块的硬件引脚配置    
+        endmenu
+                
+        menu "MPU6050_PIN"
         config MPU6050_SCL
             int "MPU6050 SCL"
             default 22
@@ -87,84 +88,83 @@ menu "Hard_Start"
         config MPU6050_INT
             int "MPU6050 INT"
             default 23
-    help
-        MPU6050模块的硬件引脚配置 
-        注意在板子上，ALCC与INT相连，即电量计lc2944完全复用6050引脚   
-    endmenu
-
-    menu "SD_PIN"
-        choice SD_MODE
-            prompt "选择SD模式"
-            default SD_MODE_SDIO 
-            help
-                SD卡模式选择，默认SDIO模式
-
-            config SD_MODE_SPI
-                bool "SPI模式"
-            config SD_MODE_SDIO
-                bool "SDIO模式"
-        endchoice
-
-        if SD_MODE_SPI
-            config SD_CS
-                int "SD CS"
-                default 5
-            config SD_MOSI
-                int "SD MOSI"
-                default 6
-            config SD_SCLK
-                int "SD SCLK"
-                default 7
-            config SD_MISO
-                int "SD MISO"
-                default 17
-        endif
-
-        if SD_MODE_SDIO        
-            config SD_D3
-                int "SD D3"
-                default 5
-            config SD_CMD
-                int "SD CMD"
-                default 6
-            config SD_CLK
-                int "SD CLK"
-                default 7
-            config SD_D0
-                int "SD D0"
-                default 17
-            config SD_D1
-                int "SD D1"
-                default 18
-            config SD_D2
-                int "SD D2"
-                default 4 
-        endif
-
-            config SD_insertion
-                int "SD Insertion"
-                default 8
+        help
+            MPU6050模块的硬件引脚配置 
+            注意在板子上，ALCC与INT相连，即电量计lc2944完全复用6050引脚   
+        endmenu
+    
+        menu "SD_PIN"
+            choice SD_MODE
+                prompt "选择SD模式"
+                default SD_MODE_SDIO 
                 help
-                    SD卡插入检测引脚，低电平表示卡插入
-            
-    help
-        SD卡模块的硬件引脚配置    
-    endmenu
+                    SD卡模式选择，默认SDIO模式
     
-    menu "ENCODER_PIN"
-        config ENCODER_A
-            int "ENCODER A"
-            default 41
-        config ENCODER_S
-            int "ENCODER S"
-            default 40
-        config ENCODER_B
-            int "ENCODER B"
-            default 42
-    help
-        编码器模块的硬件引脚配置    
-    endmenu
-
-
+                config SD_MODE_SPI
+                    bool "SPI模式"
+                config SD_MODE_SDIO
+                    bool "SDIO模式"
+            endchoice
     
+            if SD_MODE_SPI
+                config SD_CS
+                    int "SD CS"
+                    default 5
+                config SD_MOSI
+                    int "SD MOSI"
+                    default 6
+                config SD_SCLK
+                    int "SD SCLK"
+                    default 7
+                config SD_MISO
+                    int "SD MISO"
+                    default 17
+            endif
+    
+            if SD_MODE_SDIO        
+                config SD_D3
+                    int "SD D3"
+                    default 5
+                config SD_CMD
+                    int "SD CMD"
+                    default 6
+                config SD_CLK
+                    int "SD CLK"
+                    default 7
+                config SD_D0
+                    int "SD D0"
+                    default 17
+                config SD_D1
+                    int "SD D1"
+                    default 18
+                config SD_D2
+                    int "SD D2"
+                    default 4 
+            endif
+    
+                config SD_insertion
+                    int "SD Insertion"
+                    default 8
+                    help
+                        SD卡插入检测引脚，低电平表示卡插入
+                
+        help
+            SD卡模块的硬件引脚配置    
+        endmenu
+        
+        menu "ENCODER_PIN"
+            config ENCODER_A
+                int "ENCODER A"
+                default 41
+            config ENCODER_S
+                int "ENCODER S"
+                default 40
+            config ENCODER_B
+                int "ENCODER B"
+                default 42
+        help
+            编码器模块的硬件引脚配置    
+        endmenu
+
+    endif
 endmenu

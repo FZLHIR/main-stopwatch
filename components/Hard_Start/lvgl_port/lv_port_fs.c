@@ -1,41 +1,19 @@
-/**
- * @file lv_port_fs_templ.c
- *
- */
+#include "lv_port_fs.h"
+#include "SD.h"
+#include <stdio.h>
+#include <dirent.h>
+#include <limits.h>
 
-/*Copy this file as "lv_port_fs.c" and set this value to "1" to enable content*/
-#if 0
+static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
+static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p);
+static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
+static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw);
+static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence);
+static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 
-/*********************
- *      INCLUDES
- *********************/
-#include "lv_port_fs_template.h"
-#include "../../lvgl.h"
-
-/*********************
- *      DEFINES
- *********************/
-
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**********************
- *  STATIC PROTOTYPES
- **********************/
-static void fs_init(void);
-
-static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode);
-static lv_fs_res_t fs_close(lv_fs_drv_t * drv, void * file_p);
-static lv_fs_res_t fs_read(lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br);
-static lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_t btw, uint32_t * bw);
-static lv_fs_res_t fs_seek(lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence_t whence);
-static lv_fs_res_t fs_size(lv_fs_drv_t * drv, void * file_p, uint32_t * size_p);
-static lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
-
-static void * fs_dir_open(lv_fs_drv_t * drv, const char * path);
-static lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn);
-static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * rddir_p);
+static void *fs_dir_open(lv_fs_drv_t *drv, const char *path);
+static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *rddir_p, char *fn);
+static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p);
 
 /**********************
  *  STATIC VARIABLES
@@ -48,28 +26,27 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * rddir_p);
 /**********************
  *      MACROS
  **********************/
-
+#define MOUNT_POINT "/sdcard"
+// 路径转换：将LVGL路径转换为VFS路径（如"V:/img.jpg" -> "/sdcard/img.jpg"）
+static void path_convert(char *buf, const char *path)
+{
+    snprintf(buf, LV_FS_MAX_PATH_LENGTH, MOUNT_POINT "/%s", path + 2); // 跳过"V:/"
+}
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
 
 void lv_port_fs_init(void)
 {
-    /*----------------------------------------------------
-     * Initialize your storage device and File System
-     * -------------------------------------------------*/
-    fs_init();
-
-    /*---------------------------------------------------
-     * Register the file system interface in LVGL
-     *--------------------------------------------------*/
-
-    /*Add a simple drive to open images*/
+    #if CONFIG_SD_MODE_SDIO
+    SD_Init();
+    #endif
+    #if CONFIG_SD_MODE_SPI
+    SD_Init_SPI();
+    #endif
     static lv_fs_drv_t fs_drv;
     lv_fs_drv_init(&fs_drv);
-
-    /*Set up fields...*/
-    fs_drv.letter = 'P';
+    fs_drv.letter = 'V';
     fs_drv.open_cb = fs_open;
     fs_drv.close_cb = fs_close;
     fs_drv.read_cb = fs_read;
@@ -84,178 +61,163 @@ void lv_port_fs_init(void)
     lv_fs_drv_register(&fs_drv);
 }
 
-/**********************
- *   STATIC FUNCTIONS
- **********************/
-
-/*Initialize your Storage device and File system.*/
-static void fs_init(void)
-{
-    /*E.g. for FatFS initialize the SD card and FatFS itself*/
-
-    /*You code here*/
-}
-
 /**
- * Open a file
- * @param drv       pointer to a driver where this function belongs
- * @param path      path to the file beginning with the driver letter (e.g. S:/folder/file.txt)
- * @param mode      read: FS_MODE_RD, write: FS_MODE_WR, both: FS_MODE_RD | FS_MODE_WR
- * @return          a file descriptor or NULL on error
+ * 打开文件
+ * @param drv      指向此函数所属的驱动程序的指针
+ * @param path      以驱动程序字母开头的文件路径（例如 S：/folder/file.txt）
+ * @param mode      读取：FS_MODE_RD，写入：FS_MODE_WR，两者：FS_MODE_RD |FS_MODE_WR
+ * @return          文件描述符或 NULL 出错
  */
-static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
+static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
+    char vfs_path[LV_FS_MAX_PATH_LENGTH + 1];
+    path_convert(vfs_path, path);
 
-    void * f = NULL;
-
-    if(mode == LV_FS_MODE_WR) {
-        /*Open a file for write*/
-        f = ...         /*Add your code here*/
-    }
-    else if(mode == LV_FS_MODE_RD) {
-        /*Open a file for read*/
-        f = ...         /*Add your code here*/
-    }
-    else if(mode == (LV_FS_MODE_WR | LV_FS_MODE_RD)) {
-        /*Open a file for read and write*/
-        f = ...         /*Add your code here*/
+    const char *fmode = "rb";
+    if (mode & LV_FS_MODE_WR)
+    {
+        if (mode & LV_FS_MODE_RD)
+            fmode = "rb+";
+        else
+            fmode = "wb";
     }
 
-    return f;
+    return fopen(vfs_path, fmode);
 }
 
 /**
- * Close an opened file
- * @param drv       pointer to a driver where this function belongs
- * @param file_p    pointer to a file_t variable. (opened with fs_open)
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 关闭打开的文件
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param file_p    指向 file_t 变量的指针。（以 fs_open 打开）
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_close(lv_fs_drv_t * drv, void * file_p)
+static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
+    fclose((FILE *)file_p);
+    return LV_FS_RES_OK;
 }
 
 /**
- * Read data from an opened file
- * @param drv       pointer to a driver where this function belongs
- * @param file_p    pointer to a file_t variable.
- * @param buf       pointer to a memory block where to store the read data
- * @param btr       number of Bytes To Read
- * @param br        the real number of read bytes (Byte Read)
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 从打开的文件中读取数据
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param file_p    指向 file_t 变量的指针。
+ * @param buf       指向存储读取数据的内存块的指针
+ * @param btr       要读取的字节数
+ * @param br        读取字节的实际数量 （Byte Read）
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_read(lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br)
+static lv_fs_res_t fs_read(lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
+    *br = fread(buf, 1, btr, (FILE *)file_p);
+    return ferror((FILE *)file_p) ? LV_FS_RES_UNKNOWN : LV_FS_RES_OK;
 }
 
 /**
- * Write into a file
- * @param drv       pointer to a driver where this function belongs
- * @param file_p    pointer to a file_t variable
- * @param buf       pointer to a buffer with the bytes to write
- * @param btw       Bytes To Write
- * @param bw        the number of real written bytes (Bytes Written). NULL if unused.
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 写入文件
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param file_p    指向 file_t 变量的指针
+ * @param buf       指向包含要写入的字节的缓冲区的指针
+ * @param btw       要写入的字节数
+ * @param bw        实际写入的字节数 （Bytes Written）。如果未使用，则为 NULL。
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_write(lv_fs_drv_t * drv, void * file_p, const void * buf, uint32_t btw, uint32_t * bw)
+static lv_fs_res_t fs_write(lv_fs_drv_t *drv, void *file_p, const void *buf, uint32_t btw, uint32_t *bw)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
+    *bw = fwrite(buf, 1, btw, (FILE *)file_p);
+    return ferror((FILE *)file_p) ? LV_FS_RES_UNKNOWN : LV_FS_RES_OK;
 }
 
 /**
- * Set the read write pointer. Also expand the file size if necessary.
- * @param drv       pointer to a driver where this function belongs
- * @param file_p    pointer to a file_t variable. (opened with fs_open )
- * @param pos       the new position of read write pointer
- * @param whence    tells from where to interpret the `pos`. See @lv_fs_whence_t
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 设置读写指针。如有必要，还可以扩展文件大小。
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param file_p    指向 file_t 变量的指针。（以 fs_open 开头）
+ * @param pos       读写指针的新位置
+ * @param whence    告诉从哪里解释 'POS'。查看 @lv_fs_whence_t
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_seek(lv_fs_drv_t * drv, void * file_p, uint32_t pos, lv_fs_whence_t whence)
+static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
-}
-/**
- * Give the position of the read write pointer
- * @param drv       pointer to a driver where this function belongs
- * @param file_p    pointer to a file_t variable.
- * @param pos_p     pointer to to store the result
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
- */
-static lv_fs_res_t fs_tell(lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
-{
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
-}
-
-/**
- * Initialize a 'lv_fs_dir_t' variable for directory reading
- * @param drv       pointer to a driver where this function belongs
- * @param path      path to a directory
- * @return          pointer to the directory read descriptor or NULL on error
- */
-static void * fs_dir_open(lv_fs_drv_t * drv, const char * path)
-{
-    void * dir = NULL;
-    /*Add your code here*/
-    dir = ...           /*Add your code here*/
-          return dir;
+    /* 将LVGL的whence映射到标准C的seek模式 */
+    int c_whence;
+    switch (whence)
+    {
+    case LV_FS_SEEK_SET:
+        c_whence = SEEK_SET;
+        break;
+    case LV_FS_SEEK_CUR:
+        c_whence = SEEK_CUR;
+        break;
+    case LV_FS_SEEK_END:
+        c_whence = SEEK_END;
+        break;
+    default:
+        return LV_FS_RES_INV_PARAM;
+    }
+    /* 注意：fseek的offset类型为long，需要处理32位平台的潜在截断 */
+    if (pos > LONG_MAX)
+        return LV_FS_RES_INV_PARAM; // 偏移量超过系统支持范围
+    return fseek((FILE *)file_p, (long)pos, c_whence) ?  LV_FS_RES_UNKNOWN: LV_FS_RES_OK;
 }
 
 /**
- * Read the next filename form a directory.
- * The name of the directories will begin with '/'
- * @param drv       pointer to a driver where this function belongs
- * @param rddir_p   pointer to an initialized 'lv_fs_dir_t' variable
- * @param fn        pointer to a buffer to store the filename
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 给出读写指针的位置
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param file_p    指向 file_t 变量的指针。
+ * @param pos_p     用于存储结果的指针
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_dir_read(lv_fs_drv_t * drv, void * rddir_p, char * fn)
+static lv_fs_res_t fs_tell(lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
+    *pos_p = ftell((FILE *)file_p);
+    return (*pos_p != (uint32_t)-1) ? LV_FS_RES_OK : LV_FS_RES_UNKNOWN;
+}
 
-    /*Add your code here*/
-
-    return res;
+/// 文件夹操作
+/**
+ *初始化 'lv_fs_dir_t' 变量以进行目录读取
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param path      目录的路径
+ * @return          指向目录读取描述符的指针或出错时为 NULL
+ */
+static void *fs_dir_open(lv_fs_drv_t *drv, const char *path)
+{
+    char vfs_path[LV_FS_MAX_PATH_LENGTH + 1];
+    path_convert(vfs_path, path);
+    return opendir(vfs_path);
 }
 
 /**
- * Close the directory reading
- * @param drv       pointer to a driver where this function belongs
- * @param rddir_p   pointer to an initialized 'lv_fs_dir_t' variable
- * @return          LV_FS_RES_OK: no error or  any error from @lv_fs_res_t enum
+ * 从目录中读取下一个文件名。
+ * 目录的名称将以 '/' 开头
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param rddir_p   指向已初始化的 'lv_fs_dir_t' 变量的指针
+ * @param fn        指向缓冲区的指针以存储文件名
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
  */
-static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * rddir_p)
+static lv_fs_res_t fs_dir_read(lv_fs_drv_t *drv, void *rddir_p, char *fn)
 {
-    lv_fs_res_t res = LV_FS_RES_NOT_IMP;
-
-    /*Add your code here*/
-
-    return res;
+    struct dirent *entry;
+    while ((entry = readdir((DIR *)rddir_p)) != NULL)
+    {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+        strcpy(fn, entry->d_name);
+        if (entry->d_type == DT_DIR)
+            strcat(fn, "/"); // 目录添加斜杠
+        return LV_FS_RES_OK;
+    }
+    fn[0] = '\0';        // 没有更多文件
+    return LV_FS_RES_OK; // 没有更多文件时也返回OK，LVGL通过fn[0] == '\0'判断结束
 }
 
-#else /*Enable this file at the top*/
-
-/*This dummy typedef exists purely to silence -Wpedantic.*/
-typedef int keep_pedantic_happy;
-#endif
+/**
+ * 关闭读取的目录
+ * @param drv       指向此函数所属的驱动程序的指针
+ * @param rddir_p   指向已初始化的 'lv_fs_dir_t' 变量的指针
+ * @return          LV_FS_RES_OK：没有错误或来自 @lv_fs_res_t 枚举的任何错误
+ */
+static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p)
+{
+    closedir((DIR *)rddir_p);
+    return LV_FS_RES_OK;
+}
