@@ -17,7 +17,7 @@
 #define LV_COLOR_DEPTH 16
 
 /*交换 2 字节的 RGB565 颜色。如果显示器具有 8 位接口（例如 SPI），则很有用*/
-#define LV_COLOR_16_SWAP 1
+#define LV_COLOR_16_SWAP 0
 
 /*启用此功能以在透明背景上绘制。
  *如果要使用 opa 和 transform_* 样式属性，则它是必需的。（透明度与图像变换）
@@ -39,7 +39,7 @@
 #define LV_MEM_CUSTOM 1
 #if LV_MEM_CUSTOM == 0
 /*可用于 'lv_mem_alloc（）' 的内存大小，以字节为单位 （>= 2kB）*/
-#define LV_MEM_SIZE (480U * 1024U) /*[bytes]*/
+#define LV_MEM_SIZE (200U * 1024U) /*[bytes]*/
 
 /*为内存池设置一个地址，而不是将其分配为普通数组。也可以在外部 SRAM 中。*/
 #define LV_MEM_ADR 0 /*0: 闲置*/
@@ -49,11 +49,11 @@
 #undef LV_MEM_POOL_ALLOC
 #endif
 
-#else /*LV_MEM_CUSTOM*/
+#else /*LV_MEM_CUSTOM*/ //*使用自定义的 malloc/free*//在spram中MALLOC_CAP_SPIRAM//在dram中MALLOC_CAP_INTERNAL//可用dma MALLOC_CAP_DMA
 #define LV_MEM_CUSTOM_INCLUDE <stdlib.h>
-#define LV_MEM_CUSTOM_ALLOC(size) heap_caps_malloc(size, MALLOC_CAP_SPIRAM)
+#define LV_MEM_CUSTOM_ALLOC(size) heap_caps_malloc(size, MALLOC_CAP_INTERNAL)
 #define LV_MEM_CUSTOM_FREE(p) free(p)
-#define LV_MEM_CUSTOM_REALLOC(p, size) heap_caps_realloc(p, size, MALLOC_CAP_SPIRAM)
+#define LV_MEM_CUSTOM_REALLOC(p, size) heap_caps_realloc(p, size, MALLOC_CAP_INTERNAL)
 
 #endif /*LV_MEM_CUSTOM*/
 
@@ -69,10 +69,10 @@
  *====================*/
 
 /*默认显示刷新间隔。LVG 将在这段时间内重新绘制更改的区域*/
-#define LV_DISP_DEF_REFR_PERIOD 20 /*[ms]*/
+#define LV_DISP_DEF_REFR_PERIOD 16 /*[ms]*/
 
 /*输入设备读取周期（以毫秒为单位）*/
-#define LV_INDEV_DEF_READ_PERIOD 60 /*[ms]*/
+#define LV_INDEV_DEF_READ_PERIOD 50 /*[ms]*/
 
 /*使用自定义时钟周期源，以毫秒为单位告知经过的时间。
  *这样就无需使用 `lv_tick_inc()` 手动更新tick了。）*/
@@ -127,15 +127,15 @@
  * “变换的图层”（使用变换角度/缩放属性）使用更大的缓冲区
  * 并且不能分块绘制。因此，这些设置仅影响具有不透明度的 widget。
  */
-#define LV_LAYER_SIMPLE_BUF_SIZE (64 * 1024)
-#define LV_LAYER_SIMPLE_FALLBACK_BUF_SIZE (4 * 1024)
+#define LV_LAYER_SIMPLE_BUF_SIZE (120 * 1024)
+#define LV_LAYER_SIMPLE_FALLBACK_BUF_SIZE (10 * 1024)
 
 /*默认图像缓存大小。图像缓存使图像保持打开状态。
  *如果只使用内置的图像格式，则缓存没有真正的优势。（即，如果未添加新的图像解码器）
  *使用复杂的图像解码器（e.g. PNG 或 JPG）缓存可以保存图像的连续打开/解码。
  *但是，打开的映像可能会消耗额外的 RAM。
  *0：禁用缓存*/
-#define LV_IMG_CACHE_DEF_SIZE 6
+#define LV_IMG_CACHE_DEF_SIZE 10
 
 /*每个颜色梯度允许的停止数。增加此项以允许更多停止。
  *每个额外的停止点将增加 （sizeof（lv_color_t） + 1） 字节*/
@@ -146,7 +146,7 @@
  *LV_GRAD_CACHE_DEF_SIZE 设置此缓存的大小（以字节为单位）。
  *如果缓存太小，则仅在绘制需要时分配地图。
  *0 表示无缓存*/
-#define LV_GRAD_CACHE_DEF_SIZE 1024
+#define LV_GRAD_CACHE_DEF_SIZE (2 * 1024)
 
 /*允许对渐变进行抖动（以在有限的颜色深度显示上实现视觉平滑的颜色渐变）
  *LV_DITHER_GRADIENT意味着再分配一行或两行对象的渲染表面
@@ -283,7 +283,7 @@
 
 /*1: 显示已使用的内存和内存碎片
  * 需求 LV_MEM_CUSTOM = 0*/
-#define LV_USE_MEM_MONITOR 1
+#define LV_USE_MEM_MONITOR 0
 #if LV_USE_MEM_MONITOR
 #define LV_USE_MEM_MONITOR_POS LV_ALIGN_BOTTOM_LEFT
 #endif
@@ -340,7 +340,7 @@
 #define LV_ATTRIBUTE_LARGE_RAM_ARRAY
 
 /*将性能关键功能放入更快的内存（例如 RAM）中*/
-#define LV_ATTRIBUTE_FAST_MEM
+// #define LV_ATTRIBUTE_FAST_MEM
 
 /*GPU 加速作中使用的前缀变量，通常这些变量需要放置在 DMA 可访问的 RAM 部分中*/
 #define LV_ATTRIBUTE_DMA
@@ -771,7 +771,7 @@
 #define LV_DEMO_MUSIC_LANDSCAPE 0
 #define LV_DEMO_MUSIC_ROUND 0
 #define LV_DEMO_MUSIC_LARGE 0
-#define LV_DEMO_MUSIC_AUTO_PLAY 1
+#define LV_DEMO_MUSIC_AUTO_PLAY 0
 #endif
 
 /*--END OF LV_CONF_H--*/

@@ -37,18 +37,17 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io);
 esp_err_t send(esp_lcd_panel_io_handle_t io, uint16_t cmd, uint16_t data);
 static bool lvgl_flush_ok(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx);
 static esp_err_t panel_t6k71_sleep(esp_lcd_panel_io_handle_t io, bool sleep);
-/// TYPEDEFS
+esp_lcd_panel_io_handle_t panel_handle = NULL;
 
 /// GLOBAL FUNCTIONS
 void t6k71_init(lv_disp_drv_t *disp_drv)
 {
-    esp_lcd_panel_io_handle_t panel_handle = NULL;
     gpio_config_t RST_gpio_config = {
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_ENABLE,
         .pin_bit_mask = 1ULL << T6K71_RST};
-    
+
     ESP_ERROR_CHECK(gpio_config(&RST_gpio_config));
     init_i80_bus(&panel_handle, disp_drv);
     disp_drv->user_data = panel_handle;
@@ -63,7 +62,7 @@ esp_err_t t6k71_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *col
     esp_lcd_panel_io_handle_t io = drv->user_data;
     int x_start = area->x1;
     int x_end = area->x2;
-    int y_start = area->y1-1;
+    int y_start = area->y1 - 1;
     int y_end = area->y2 + 4; // 加4是为了解决显示不全的问题
     // 旋转180度方向
     send(io, LCD_T_X_START, 239 - x_end);     // 设置行地址起点
@@ -71,7 +70,7 @@ esp_err_t t6k71_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *col
     send(io, LCD_T_Y_START, 319 - y_end + 4); // 设置列地址起点
     send(io, LCD_T_Y_END, 319 - y_start);     // 设置列地址终点
     send(io, LCD_T_XADDR, 239 - x_start);     // 设置X起始地址
-    send(io, LCD_T_YADDR, 319 - y_start +3); // 设置Y起始地址
+    send(io, LCD_T_YADDR, 319 - y_start + 3); // 设置Y起始地址
 
     // 面板默认方向
     // send(io, LCD_T_ENTRY, S_HWAM_L);  // 旋转刷新方向
@@ -85,7 +84,7 @@ esp_err_t t6k71_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *col
     // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_color(io, LCD_T_WR, NULL, 0), TAG, "io tx color failed");
     // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_T_WR, NULL, 0), TAG, "io tx 参数错误");
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_color(io, LCD_T_WR, color_map, len), TAG, "io tx color failed");
-    ESP_LOGW(TAG, "发送坐标为: %d,%d,%d,%d", x_start, x_end, y_start, y_end);
+    ESP_LOGD(TAG, "发送坐标为: %d,%d,%d,%d", x_start, x_end, y_start, y_end);
     return ESP_OK;
 }
 
@@ -175,9 +174,9 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io) // 初始化 t6k
     panel_t6k71_standby(io, false);        // 唤醒 LCD 面板
     send(io, LCD_T_NOP, S_NOP);            // 空操作
     send(io, LCD_T_STANDBY, S_DEEP_RESET); // 退出待机
-    ets_delay_us(1000);
+    ets_delay_us(10);
     send(io, LCD_T_OSC, 0x0001); // 开启震荡
-    ets_delay_us(1000);
+    ets_delay_us(10);
     // 显示设置
     send(io, LCD_T_OUTPUT, S_L);               // 设置输出  默认设置（0-128/320行）
     send(io, LCD_T_AC, S_FRAME);               // 设置帧翻转
@@ -189,7 +188,7 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io) // 初始化 t6k
     send(io, LCD_T_DISP_XY, S_XY_N);           // 设置XY加倍功能
     send(io, LCD_T_OUT_DISP_MODE, S_I80_MODE); // 设置外部显示信号模式
     send(io, LCD_T_FR, S_FR);                  // 设置FR周期调整
-    ets_delay_us(1000);
+    ets_delay_us(10);
 
     send(io, LCD_T_LTPS_ASW, S_ASW);   // 设置LTPS设置(AWS时序H与上升沿)
     send(io, LCD_T_LTPS_OE, S_OE);     // 设置LTPS设置(OE时序上升与下降)
@@ -200,13 +199,13 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io) // 初始化 t6k
     send(io, LCD_T_OFFLINER, S_OFF);   // 设置断电序列设置
     // 电源设置
     send(io, LCD_T_POWV, S_POWV); // 设置电源1
-    ets_delay_us(1000);
+    ets_delay_us(10);
     send(io, LCD_T_POWX, S_POWX); // 设置电源2
-    ets_delay_us(1000);
+    ets_delay_us(10);
     send(io, LCD_T_POWB, S_POWB); // 设置电源3
-    ets_delay_us(1000);
+    ets_delay_us(10);
     send(io, LCD_T_POWE, S_POWE); // 设置电源4
-    ets_delay_us(1000);
+    ets_delay_us(10);
     // 伽马设置
     send(io, LCD_T_GAMM1, S_GAMM1_init);       // 设置Gamma1
     send(io, LCD_T_GAMM2, S_GAMM2_init);       // 设置Gamma2
@@ -226,12 +225,12 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io) // 初始化 t6k
     send(io, LCD_T_OSD, S_OSD_OFF);          // 设置OSD关闭
     // 显示控制
     send(io, LCD_T_AUTO, S_AUTO); // 设置自动序列控制
-    panel_t6k71_sleep(io, false); // 显示开启
-    ets_delay_us(1000);
+    // panel_t6k71_sleep(io, false); // 显示开启
+    // ets_delay_us(10);
     ESP_LOGW(TAG, "T6K71 面板初始化完成");
     send(io, LCD_T_ENTRY, S_HWAM_R); // 旋转刷新方向
     ESP_LOGW(TAG, "显示旋转180度");
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    // vTaskDelay(pdMS_TO_TICKS(1000));
     return ESP_OK;
 }
 
@@ -268,4 +267,9 @@ static esp_err_t panel_t6k71_sleep(esp_lcd_panel_io_handle_t io, bool on_off) //
         ESP_LOGD(TAG, "T6K71 显示");
     }
     return ESP_OK;
+}
+
+void lcd_on(bool on_off)
+{
+    panel_t6k71_sleep(panel_handle, !on_off);
 }

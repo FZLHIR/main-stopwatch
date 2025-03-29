@@ -2,7 +2,8 @@
 #define LV_PORT_INDEV_TEMPL_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #if defined(LV_LVGL_H_INCLUDE_SIMPLE)
@@ -10,7 +11,7 @@ extern "C" {
 #else
 #include "lvgl/lvgl.h"
 #endif
-
+    lv_indev_t *get_encoder_indev(void);
     void lv_port_indev_init(void);
 
 #ifdef __cplusplus

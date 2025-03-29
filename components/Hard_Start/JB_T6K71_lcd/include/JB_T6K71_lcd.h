@@ -46,7 +46,7 @@ extern "C"
     /// GLOBAL PROTOTYPES
     void t6k71_init(lv_disp_drv_t *disp_drv);
     esp_err_t t6k71_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map);
-
+    void lcd_on(bool on_off);
 #ifdef __cplusplus
 }
 #endif

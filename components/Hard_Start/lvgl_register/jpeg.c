@@ -56,6 +56,8 @@ static lv_fs_res_t load_image_file(const char *filename, uint8_t **buffer, size_
     lv_fs_res_t res = lv_fs_open(&f, filename, LV_FS_MODE_RD);
     if (res != LV_FS_RES_OK)
     {
+
+        ESP_LOGE(TAG, "错误码: %d", res);
         ESP_LOGE(TAG, "无法打开文件: %s", filename);
         return res;
     }
@@ -64,17 +66,17 @@ static lv_fs_res_t load_image_file(const char *filename, uint8_t **buffer, size_
     lv_fs_tell(&f, &len);
     lv_fs_seek(&f, 0, LV_FS_SEEK_SET);
 
-    if (read_head && len > 1024)
-    {
-        len = 1024;
-    }
-    else if (len <= 0)
+    // if (read_head && len > 1024)
+    // {
+    //     len = 1024;
+    //     ESP_LOGW(TAG, "最大1024字节");
+    // } else
+    if (len <= 0)
     {
         lv_fs_close(&f);
         return LV_FS_RES_FS_ERR;
     }
-
-    *buffer = malloc(len);
+    *buffer = jpeg_calloc_align((size_t)len, 16);
     if (!*buffer)
     {
         ESP_LOGE(TAG, "无法为文件分配内存: %s", filename);
@@ -83,7 +85,7 @@ static lv_fs_res_t load_image_file(const char *filename, uint8_t **buffer, size_
     }
 
     uint32_t rn = 0;
-    res = lv_fs_read(&f, *buffer, len, &rn);
+    res = lv_fs_read(&f, *buffer, len, &rn); // 读取文件返回buf
     lv_fs_close(&f);
 
     if (res != LV_FS_RES_OK || rn != len)
@@ -124,7 +126,7 @@ static lv_res_t jpeg_decode(uint8_t **out, uint32_t *w, uint32_t *h, const uint8
         return LV_RES_INV;
     }
 
-    jpeg_dec_io_t *jpeg_io = malloc(sizeof(jpeg_dec_io_t));
+    jpeg_dec_io_t *jpeg_io = jpeg_calloc_align(sizeof(jpeg_dec_io_t), 16);
     jpeg_dec_header_info_t *out_info = malloc(sizeof(jpeg_dec_header_info_t));
     if (!jpeg_io || !out_info)
     {
@@ -141,13 +143,12 @@ static lv_res_t jpeg_decode(uint8_t **out, uint32_t *w, uint32_t *h, const uint8
         return LV_RES_INV;
     }
 
-    jpeg_io->inbuf = (unsigned char *)in;
+    jpeg_io->inbuf = (uint8_t *)in;
     jpeg_io->inbuf_len = insize;
 
     ret = jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
     if (ret == JPEG_ERR_OK)
     {
-
         *w = out_info->width;
         *h = out_info->height;
     }
@@ -158,6 +159,25 @@ static lv_res_t jpeg_decode(uint8_t **out, uint32_t *w, uint32_t *h, const uint8
         jpeg_dec_close(jpeg_dec);
         ESP_LOGE(TAG, "Failed to parse jpeg header");
         return LV_RES_INV;
+    }
+    if (out!= NULL)
+    {
+        int *out_len = jpeg_calloc_align(sizeof(int *), 16);
+        jpeg_dec_get_outbuf_len(jpeg_dec, out_len);
+        jpeg_io->outbuf = (uint8_t *)jpeg_calloc_align((size_t)*out_len, 16);
+        ret = jpeg_dec_process(jpeg_dec, jpeg_io);
+        if (ret != JPEG_ERR_OK)
+        {
+            free(jpeg_io);
+            free(out_info);
+            jpeg_dec_close(jpeg_dec);
+            ESP_LOGE(TAG, "Failed to process jpeg image");
+            return LV_RES_INV;
+        }
+        else
+        {
+            *out = jpeg_io->outbuf;
+        }
     }
 
     free(jpeg_io);
@@ -264,6 +284,7 @@ static lv_res_t decoder_info(struct _lv_img_decoder_t *decoder, const void *src,
             header->cf = LV_IMG_CF_TRUE_COLOR;
             header->w = width;
             header->h = height;
+            ESP_LOGW(TAG, "图片宽度:%d,高度:%d", header->w, header->h);
             free(load_img_data);
             return lv_ret;
         }
@@ -315,13 +336,15 @@ static lv_res_t decoder_open(lv_img_decoder_t *decoder, lv_img_decoder_dsc_t *ds
         {
             uint8_t *load_img_data = NULL; /*Pointer to the loaded data. Same as the original file just loaded into the RAM*/
             size_t load_img_size;          /*Size of `load_img_data` in bytes*/
-
+            ESP_LOGI(TAG, "解码文件:%s", fn);
             if (load_image_file(fn, &load_img_data, &load_img_size, false) != LV_FS_RES_OK)
             {
                 if (load_img_data)
                     free(load_img_data);
                 return LV_RES_INV;
             }
+
+
             lv_ret = jpeg_decode(&img_data, &png_width, &png_height, load_img_data, load_img_size);
             free(load_img_data);
             if (lv_ret != LV_RES_OK)

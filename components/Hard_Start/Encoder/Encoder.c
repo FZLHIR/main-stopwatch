@@ -81,8 +81,8 @@ int get_pcnt_count_diff(void)
     ESP_ERROR_CHECK(pcnt_unit_get_count(pcnt_unit, &current_count));
     current_count /= 4;                          // 四倍频率计数，实际值/4
     int count_diff = current_count - last_count; // 计算当前值与上次值的差值
-    ESP_LOGD("Encoder", "count_diff: %d, current_count: %d,last_count: %d", count_diff,current_count,last_count);
-    last_count = current_count;                  // 更新上次的计数值为当前值
+    ESP_LOGD("Encoder", "count_diff: %d, current_count: %d,last_count: %d", count_diff, current_count, last_count);
+    last_count = current_count; // 更新上次的计数值为当前值
     return count_diff;
 }
 

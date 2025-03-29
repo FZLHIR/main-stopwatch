@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <limits.h>
+#include "esp_log.h"
 
 static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
 static lv_fs_res_t fs_close(lv_fs_drv_t *drv, void *file_p);
@@ -30,7 +31,7 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t *drv, void *rddir_p);
 // 路径转换：将LVGL路径转换为VFS路径（如"V:/img.jpg" -> "/sdcard/img.jpg"）
 static void path_convert(char *buf, const char *path)
 {
-    snprintf(buf, LV_FS_MAX_PATH_LENGTH, MOUNT_POINT "/%s", path + 2); // 跳过"V:/"
+    snprintf(buf, LV_FS_MAX_PATH_LENGTH, MOUNT_POINT "/%s", path + 1); // 跳过"V:/"
 }
 /**********************
  *   GLOBAL FUNCTIONS
@@ -38,12 +39,12 @@ static void path_convert(char *buf, const char *path)
 
 void lv_port_fs_init(void)
 {
-    #if CONFIG_SD_MODE_SDIO
+#if CONFIG_SD_MODE_SDIO
     SD_Init();
-    #endif
-    #if CONFIG_SD_MODE_SPI
+#endif
+#if CONFIG_SD_MODE_SPI
     SD_Init_SPI();
-    #endif
+#endif
     static lv_fs_drv_t fs_drv;
     lv_fs_drv_init(&fs_drv);
     fs_drv.letter = 'V';
@@ -81,7 +82,7 @@ static void *fs_open(lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
         else
             fmode = "wb";
     }
-
+    ESP_LOGW("vfs", "vfs_path:%s, fmode:%s", vfs_path, fmode);
     return fopen(vfs_path, fmode);
 }
 
@@ -156,7 +157,7 @@ static lv_fs_res_t fs_seek(lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_w
     /* 注意：fseek的offset类型为long，需要处理32位平台的潜在截断 */
     if (pos > LONG_MAX)
         return LV_FS_RES_INV_PARAM; // 偏移量超过系统支持范围
-    return fseek((FILE *)file_p, (long)pos, c_whence) ?  LV_FS_RES_UNKNOWN: LV_FS_RES_OK;
+    return fseek((FILE *)file_p, (long)pos, c_whence) ? LV_FS_RES_UNKNOWN : LV_FS_RES_OK;
 }
 
 /**

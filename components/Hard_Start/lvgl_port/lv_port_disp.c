@@ -3,7 +3,7 @@
 #include "esp_heap_caps.h"
 #include "JB_T6K71_lcd.h"
 
-#define DISP_BUF_SIZE (240 * 320 )
+#define DISP_BUF_SIZE (240 * 320 / 2)
 
 void lv_port_disp_init(void)
 {
@@ -16,11 +16,12 @@ void lv_port_disp_init(void)
     disp_drv.flush_cb = (void *)t6k71_flush; // 设置刷新函数
 
     static lv_disp_draw_buf_t draw_buf; // 分配缓存
-    lv_color_t *buf1 = (lv_color_t *)heap_caps_malloc(DISP_BUF_SIZE * sizeof(lv_color_t),  MALLOC_CAP_DMA);
-    lv_color_t *buf2 = (lv_color_t *)heap_caps_malloc(DISP_BUF_SIZE * sizeof(lv_color_t),  MALLOC_CAP_DMA);
+    lv_color_t *buf1 = (lv_color_t *)heap_caps_malloc(DISP_BUF_SIZE * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+    lv_color_t *buf2 = (lv_color_t *)heap_caps_malloc(DISP_BUF_SIZE * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
     lv_disp_draw_buf_init(&draw_buf, buf1, buf2, DISP_BUF_SIZE); // 声明缓存到lvgl
 
     disp_drv.draw_buf = &draw_buf;
     // disp_drv.full_refresh = 1; // 强制全屏刷新
-    lv_disp_drv_register(&disp_drv); // 注册设备驱动到lvgl
+   lv_disp_t * disp = lv_disp_drv_register(&disp_drv); // 注册设备驱动到lvgl
+    lv_disp_set_default(disp); // 设置默认显示屏
 }
