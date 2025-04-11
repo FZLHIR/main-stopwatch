@@ -1,17 +1,20 @@
 #include "cb.h"
 #include <stdio.h>
+#include "data_fusion.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 void screen_change(lv_obj_t **target, lv_scr_load_anim_t fademode, void (*target_init)(void))
 {
     if (*target == NULL)
         target_init();
     lv_scr_load_anim(*target, fademode, 1000, 0, false);
-}//todo后面重构
+} // todo后面重构
 
 void wtf(lv_event_t *e)
 {
-   if (lv_event_get_code(e)<18)   
-    printf("wtf\nthis is:%d\n",lv_event_get_code(e));
-
+    if (lv_event_get_code(e) < 18)
+        printf("wtf\nthis is:%d\n", lv_event_get_code(e));
 }
 
 void event_scr(lv_event_t *e)
@@ -20,7 +23,7 @@ void event_scr(lv_event_t *e)
     // TODO: 屏幕切换动画兼容
     printf("loding:%d\n", ((focus_group_t *)e->user_data)->focus_run);
     if (((focus_group_t *)e->user_data)->focus_run)
-    lv_disp_load_scr(((focus_group_t *)e->user_data)->scr_obj ? ((focus_group_t *)e->user_data)->scr_obj : e->target); // 切换屏幕
+        lv_disp_load_scr(((focus_group_t *)e->user_data)->scr_obj ? ((focus_group_t *)e->user_data)->scr_obj : e->target); // 切换屏幕
 }
 
 void event_enter_group(lv_event_t *e)
@@ -57,11 +60,41 @@ void event_enter_con_group(lv_event_t *e)
     // bool editing = lv_group_get_editing(fg->N_group); // 获取当前焦点编辑模式
     // if (editing)
     // {
-        printf("con_editing\n");
-        lv_indev_set_group(get_encoder_indev(), fg->C_group);
+    printf("con_editing\n");
+    lv_indev_set_group(get_encoder_indev(), fg->C_group);
     // }
 }
 
+static bool start = true;
+void ride_start(lv_event_t *e)
+{
+    static TaskHandle_t data_Task = NULL;
+    if (start)
+        xTaskCreatePinnedToCore(data_fusion_task, "data_fusion_task", 4096, NULL, 5, &data_Task, 1);
+    else
+        vTaskDelete(data_Task);
+    start = !start;
+}
+
+void reset_data(lv_event_t *e)
+{
+    if (!start)
+    {
+        static TaskHandle_t reset_Task = NULL;
+        if (lv_event_get_code(e) == LV_EVENT_FOCUSED)
+            xTaskCreate(re_data, "reset_task", 4096, NULL, 6, &reset_Task);
+        else if (lv_event_get_code(e) == LV_EVENT_RELEASED && reset_Task)
+            vTaskDelete(reset_Task);
+    }
+    // vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
+void refresh_scr(lv_event_t *e)
+{
+    int pix_x = 0, pix_y = 0;
+    get_gps_data(&pix_y, &pix_x);
+    refresh_img(pix_x, pix_y);
+}
 // // 启动
 // void ui_event_QDimg(lv_event_t *e)
 // {

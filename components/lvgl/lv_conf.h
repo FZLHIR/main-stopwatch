@@ -135,7 +135,7 @@
  *使用复杂的图像解码器（e.g. PNG 或 JPG）缓存可以保存图像的连续打开/解码。
  *但是，打开的映像可能会消耗额外的 RAM。
  *0：禁用缓存*/
-#define LV_IMG_CACHE_DEF_SIZE 10
+#define LV_IMG_CACHE_DEF_SIZE 100
 
 /*每个颜色梯度允许的停止数。增加此项以允许更多停止。
  *每个额外的停止点将增加 （sizeof（lv_color_t） + 1） 字节*/

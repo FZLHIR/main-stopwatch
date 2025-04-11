@@ -1,6 +1,6 @@
 #pragma once
 #include "lvgl.h"
-
+#include "data_fusion.h"
 #include "screen.h"
 #include "anim.h"
 #include "lv_port_indev.h"
@@ -24,6 +24,9 @@ void event_enter_group(lv_event_t *e);//进组
 void event_leave_group(lv_event_t *e);//退组
 void event_enter_con_group(lv_event_t *e);//退con组
 
+void ride_start(lv_event_t *e);
+void reset_data(lv_event_t *e);
+void refresh_scr(lv_event_t *e);
 // void ui_event_QDimg(lv_event_t *e);
 // void ui_event_APP(lv_event_t *e);
 // void ui_event_APPseting_Button(lv_event_t *e);

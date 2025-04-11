@@ -19,4 +19,4 @@ idf_component_register(SRCS "UI.c" ${SOURCES_C}
                          "./include/SCREEN/include"
                          "./include/SRC"
                          "./include/THEME_MANAGER/include"
-                    REQUIRES lvgl Hard_Start)
+                    REQUIRES lvgl Hard_Start data_fusion)

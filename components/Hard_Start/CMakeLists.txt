@@ -3,6 +3,7 @@ file(GLOB_RECURSE SOURCES ./JB_T6K71_lcd/*.c
                           ./Encoder/*.c
                           ./SD/*.c
                           ./lvgl_register/*.c
+                          ./mpu6050/*.c
                           )
                           
 idf_component_register(SRCS  ${SOURCES} "Hard_Start.c"                             
@@ -12,6 +13,7 @@ idf_component_register(SRCS  ${SOURCES} "Hard_Start.c"
                                  "./Encoder/include" 
                                  "./SD/include"
                                  "./lvgl_register/include"
+                                 "./mpu6050/include"
                                  "."
-                    REQUIRES lvgl esp_lcd driver sdmmc fatfs esp_new_jpeg
+                    REQUIRES lvgl esp_lcd driver sdmmc fatfs esp_new_jpeg libnmea mpu6050
                 )

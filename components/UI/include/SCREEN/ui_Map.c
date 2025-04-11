@@ -7,11 +7,19 @@ focus_group_t Epage_M = {
     .focus_run = true,
 };
 
-lv_obj_t *ui_Mapscreen_init(void)
+lv_obj_t *ui_Map_img;
+
+lv_obj_t *
+ui_Mapscreen_init(void)
 {
     lv_obj_t *ui_Map = comp_scr_create();
-    // lv_obj_clear_flag(ui_Map, LV_OBJ_FLAG_SCROLLABLE); // 禁用对象滚动
-    // lv_obj_set_style_bg_opa(ui_Map, 100, LV_PART_MAIN | LV_STATE_DEFAULT); // 背景透明
+
+    ui_Map_img = lv_img_create(ui_Map);
+    lv_img_set_src(ui_Map_img, "V:/lvgl/jpg/map17.jpg");
+    lv_obj_set_size(ui_Map_img, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_align(ui_Map_img, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_flag(ui_Map_img, LV_OBJ_FLAG_EVENT_BUBBLE);
+
     //* 子组件
     // 上横条
     lv_obj_t *ui_MapRunD = lv_obj_create(ui_Map);
@@ -80,6 +88,11 @@ lv_obj_t *ui_Mapscreen_init(void)
     lv_obj_align(ui_MapImage16, LV_ALIGN_BOTTOM_MID, 0, -2);
     lv_obj_add_flag(ui_MapImage16, LV_OBJ_FLAG_EVENT_BUBBLE);
     lv_img_set_zoom(ui_MapImage16, 191);
+    // 导航标
+    lv_obj_t *ui_Map_nav = lv_img_create(ui_Map);
+    lv_img_set_src(ui_Map_nav, &Navigation_c);
+    lv_obj_set_size(ui_Map_nav, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_align(ui_Map_nav, LV_ALIGN_CENTER, 0, 0);
     //*访问组
     lv_group_add_obj(scr_group, ui_Map); // 屏幕
 
@@ -87,18 +100,26 @@ lv_obj_t *ui_Mapscreen_init(void)
     lv_group_add_obj(map_group, ui_MapPanel2);
     lv_group_add_obj(map_group, ui_MapPanel4);
 
-    lv_group_t *map_scale_group = lv_group_create();// 缩放组
+    lv_group_t *map_scale_group = lv_group_create(); // 缩放组
     lv_group_add_obj(map_scale_group, ui_MapImage15);
     lv_group_add_obj(map_scale_group, ui_MapImage16);
-    
+
     //*添加事件
     // TODO:子组件待定
     Epage_M.C_group = scr_group;
     Epage_M.N_group = map_group;
     Epage_M.N_obj = ui_MapRunD;
     lv_obj_add_event_cb(ui_Map, event_scr, LV_EVENT_FOCUSED, &Epage_M);
+    lv_obj_add_event_cb(ui_Map, refresh_scr, LV_EVENT_FOCUSED, NULL);
     lv_obj_add_event_cb(ui_Map, event_enter_group, LV_EVENT_KEY, &Epage_M);
     lv_obj_add_event_cb(ui_Map, event_leave_group, LV_EVENT_LONG_PRESSED_REPEAT, &Epage_M);
 
     return ui_Map;
+}
+
+void refresh_img(int pix_x, int pix_y)
+{
+    // lv_img_set_src(ui_Map_img, "V:/lvgl/jpg/map17.jpg");
+    printf("refresh_img: %d, %d", pix_x, pix_y);
+    lv_obj_align(ui_Map_img, LV_ALIGN_CENTER, pix_x, pix_y);
 }
