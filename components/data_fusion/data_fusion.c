@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "data_fusion.h"
-#include "esp_dsp.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 

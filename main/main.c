@@ -34,7 +34,7 @@ void app_main(void)
     lv_init();
     hard_star();
     ESP_LOGI("MAIN", "启动界面");
-    // ui_init();
+    ui_init();
     // test_lvgl();
     // test_6050();
     // test_gps();
