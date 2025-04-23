@@ -81,9 +81,7 @@ esp_err_t t6k71_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *col
     // send(io, LCD_T_XADDR, x_start);   // 设置X起始地址
     // send(io, LCD_T_YADDR, y_start);   // 设置Y起始地址
     size_t len = (x_end - x_start) * (y_end - y_start) * 2; // 设置缓冲区
-    // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_color(io, LCD_T_WR, NULL, 0), TAG, "io tx color failed");
-    // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, LCD_T_WR, NULL, 0), TAG, "io tx 参数错误");
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_color(io, LCD_T_WR, color_map, len), TAG, "io tx color failed");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_color(io, LCD_T_WR, color_map, len), TAG, "传送颜色失败");
     ESP_LOGD(TAG, "发送坐标为: %d,%d,%d,%d", x_start, x_end, y_start, y_end);
     return ESP_OK;
 }
@@ -126,7 +124,7 @@ void init_i80_bus(esp_lcd_panel_io_handle_t *io_handle, void *user_ctx)
             .dc_data_level = 1,
         },
         .flags = {
-            .swap_color_bytes = !LV_COLOR_16_SWAP, // Swap can be done in LvGL (default) or DMA
+            .swap_color_bytes = !LV_COLOR_16_SWAP, // 可以在 LvGL （默认） 或 DMA 中进行交换
         },
         .on_color_trans_done = lvgl_flush_ok,
         .user_ctx = user_ctx,
@@ -178,7 +176,7 @@ static esp_err_t panel_t6k71_init(esp_lcd_panel_io_handle_t io) // 初始化 t6k
     send(io, LCD_T_OSC, 0x0001); // 开启震荡
     ets_delay_us(10);
     // 显示设置
-    send(io, LCD_T_OUTPUT, S_L);               // 设置输出  默认设置（0-128/320行）
+    send(io, LCD_T_OUTPUT, S_L);               // 设置输出
     send(io, LCD_T_AC, S_FRAME);               // 设置帧翻转
     send(io, LCD_T_ENTRY, S_LWAM_L);           // 设置入口模式
     send(io, LCD_T_WIDE, S_WIDE);              // 设置宽度240
@@ -238,11 +236,8 @@ esp_err_t send(esp_lcd_panel_io_handle_t io, uint16_t cmd, uint16_t data)
 {
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, cmd, NULL, 0), TAG, "io tx 参数错误");
     if (data != 0xffff)
-    {
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, -1, (uint16_t[]){data}, 2), TAG, "io tx 参数错误");
-    }
-    // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, cmd, (uint16_t[]){data}, 2), TAG, "io tx 参数错误");
-    return ESP_OK; //(uint8_t[]){(data >> 8) & 0xFF,data & 0xFF,}
+    return ESP_OK;
 }
 
 static bool lvgl_flush_ok(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)

@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "lv_demos.h"
 
+#include "driver/i2c.h"
 #include "Hard_Start.h"
 #include "JB_T6K71_lcd.h"
 #include "UI.h"
@@ -26,8 +27,7 @@ lv_obj_t *test10;
 void test_lvgl(void);
 void test_6050(void);
 void test_gps(void);
-
-
+void test_battery(void);
 
 void app_main(void)
 {
@@ -38,12 +38,10 @@ void app_main(void)
     // test_lvgl();
     // test_6050();
     // test_gps();
-    lcd_on(true);
+        lcd_on(true);
     // xTaskCreatePinnedToCore(data_fusion_task, "data_fusion_task", 4096, NULL, 5, NULL, 1);
     while (1)
-    {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
 }
 
 void scr_cb(lv_event_t *e)
@@ -279,4 +277,12 @@ void test_gps(void)
             nmea_free(data);
         }
     }
+}
+
+void test_battery(void)
+{
+    uint8_t buf[1] = {0x02};
+    uint8_t buff[2]={0,0};
+   esp_err_t ret = i2c_master_write_read_device(I2C_NUM_0, 0x64, buf, 1, buff, 2, 100 / portTICK_PERIOD_MS);
+    ESP_LOGW("LCD", "电荷量16进制:%x %x,有效性:%d", buff[0], buff[1], ret);
 }

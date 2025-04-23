@@ -39,7 +39,7 @@ lv_obj_t *ui_Bicyclescreen_init(void)
 
     // 标志图
     lv_obj_t *ui_img1 = lv_img_create(ui_BicycleBAR);
-    lv_img_set_src(ui_img1, &LED_Diode);
+    lv_img_set_src(ui_img1, &LCD);
     lv_obj_set_size(ui_img1, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
     lv_obj_t *ui_img2 = lv_img_create(ui_BicycleBAR);
@@ -51,7 +51,7 @@ lv_obj_t *ui_Bicyclescreen_init(void)
     lv_obj_set_size(ui_img3, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
     lv_obj_t *ui_img4 = lv_img_create(ui_BicycleBAR);
-    lv_img_set_src(ui_img4, &Next);
+    lv_img_set_src(ui_img4, &Battery);
     lv_obj_set_size(ui_img4, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
     // lv_obj_t *ui_img5 = lv_img_create(ui_BicycleBAR);

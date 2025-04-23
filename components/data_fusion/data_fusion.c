@@ -36,7 +36,6 @@ void fuse_speed(SpeedState *state,
                 const float mpu_accel_y)
 {
     static uint16_t gps_count = 1;
-    // const float mpu_accel = dsps_sqrtf_f32_ansi(mpu_accel_x * mpu_accel_x + mpu_accel_y * mpu_accel_y);
     // 预测阶段（基于MPU加速度）
     float dt = KF_CYCLE_MS / 1000.0f;                 // t
     state->speed += (mpu_accel_x + state->bias) * dt; // v=v0+a*t
@@ -122,8 +121,6 @@ void data_fusion_task(void *arg)
     int8_t gps_rade = 0;
     int32_t time = 0;
     float gps_speed = 0.0f;
-    // seee();
-
     while (1)
     {
         // 读取GPS数据
@@ -172,7 +169,7 @@ void data_fusion_task(void *arg)
                     strftime(fmt_buf, sizeof(fmt_buf), "%d %b %T %Y", &pos->date_time);
                     ESP_LOGI("MAIN", "日期 & 时间: %s\n", fmt_buf);
                     ESP_LOGI("MAIN", "速度，以节为单位: %f\n", pos->gndspd_knots);
-                    ESP_LOGI("MAIN", "轨道，以度为单位: %f\n", pos->track_deg);
+                    ESP_LOGI("MAIN", "方向，以度为单位: %f\n", pos->track_deg);
                     gps_speed = (float)pos->gndspd_knots * 0.514;
                     if (pos->longitude.minutes > 10)
                     {
@@ -182,7 +179,6 @@ void data_fusion_task(void *arg)
                 }
             }
         }
-
         // 读取MPU6050数据
         float acce_g[3],
             gyro_dps[3], roll, pitch;
@@ -193,7 +189,6 @@ void data_fusion_task(void *arg)
             speed_state.bias = -acce_g[0]; // 零偏初始化
         bias = false;
         fuse_speed(&speed_state, gps_speed ? gps_speed : 0.0f, acce_g[0], acce_g[1]);
-
         // 输出融合结果
         ESP_LOGI("MAIN", "x轴加速度：%.2f m/s^2", acce_g[0]);
         ESP_LOGI("MAIN", "GPS 速度：%.2f m/s， 速度：%.2f m/s，MPU零偏：%.2f，不确定性：%.2f\n",
@@ -201,7 +196,6 @@ void data_fusion_task(void *arg)
         d = speed_state.speed;
         e += (d * 0.1f);
         a = (int)e;
-        // ESP_LOGW("MAIN", "%d,%d,%d,%.2f,%.2f\n", a, b, c, d, e);
         if (time++ == 600)
         {
             c++;

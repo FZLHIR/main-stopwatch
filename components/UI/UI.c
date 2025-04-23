@@ -19,7 +19,7 @@ void ui_init(void)
     // 初始化屏幕
     // todo 可以接入一个独立的页面管理器
     // ui_APPscreen_init();
-    ui_SETINGscreen_init();
+    // ui_SETINGscreen_init();
     lv_obj_t *QD = ui_QDscreen_init();
     ui_Bicyclescreen_init();
     ui_Mapscreen_init();

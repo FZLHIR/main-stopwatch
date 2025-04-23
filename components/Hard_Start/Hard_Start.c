@@ -41,15 +41,17 @@ esp_err_t hard_star(void)
     i2c_config_t conf;
     conf.mode = I2C_MODE_MASTER;
     conf.sda_io_num = (gpio_num_t)CONFIG_MPU6050_SDA;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
     conf.scl_io_num = (gpio_num_t)CONFIG_MPU6050_SCL;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
     conf.master.clk_speed = 100000; // 400kHz
     conf.clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL;
-    esp_err_t ret = i2c_param_config(I2C_NUM_0, &conf);
+    i2c_param_config(I2C_NUM_0, &conf);
     i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0);
     ESP_LOGI(TAG, "6050部分启动");
     mpu6050_init(I2C_NUM_0); // 6050 部分初始化
+    uint8_t buffer[2] = {0x01, 0x20};
+    i2c_master_write_to_device(I2C_NUM_0, 0x64, buffer, 2, 1000 / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "硬件部分启动完成");
     return ESP_OK;
 }

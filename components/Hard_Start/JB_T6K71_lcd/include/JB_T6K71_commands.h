@@ -8,7 +8,7 @@
 #define S_SLPOUT 0X0001  // 退出睡眠模式
 // 显示屏设置
 #define LCD_T_OUTPUT 0X0001 // 设置源驱动器输出移动的方向和 LCD 上显示的行数
-#define S_L 0X0027          // 默认设置（0-128/320行）
+#define S_L 0X0027          // 默认设置（0->128/320行）
 
 #define LCD_T_AC 0X0002 // 设置帧/行液晶翻转
 #define S_FRAME 0X0000  // 帧翻转极性
